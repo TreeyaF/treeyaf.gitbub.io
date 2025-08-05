@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>终极版卖家分析报告 - Fenghai</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .container { max-width: 1600px; margin: 0 auto; padding: 40px 20px; background: white; box-shadow: 0 0 30px rgba(0,0,0,0.1); border-radius: 15px; margin-top: 20px; margin-bottom: 20px; }
+        .header { text-align: center; margin-bottom: 40px; padding: 30px 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px; margin: -20px -20px 40px -20px; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.2rem; opacity: 0.9; }
+        .section { margin-bottom: 30px; padding: 25px; background: #f8f9fa; border-radius: 10px; border-left: 5px solid #667eea; }
+        .section h2 { color: #667eea; font-size: 1.8rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .stat-card { background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 2px solid #e9ecef; }
+        .stat-number { font-size: 2rem; font-weight: bold; margin-bottom: 5px; color: white; }
+        .stat-label { color: white; font-size: 0.9rem; }
+        
+        /* 统一白色文字的颜色方案 */
+        .revenue-card { 
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+            color: white; 
+            border: 2px solid #059669;
+        }
+        .expense-card { 
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
+            color: white; 
+            border: 2px solid #dc2626;
+        }
+        .transfer-card { 
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
+            color: white; 
+            border: 2px solid #d97706;
+        }
+        .profit-card { 
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+            color: white; 
+            border: 2px solid #2563eb;
+        }
+        .info-card {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            border: 2px solid #7c3aed;
+        }
+        
+        /* 标签页样式 */
+        .tab-container { margin: 20px 0; }
+        .tab-buttons { display: flex; background: #f8f9fa; border-radius: 10px 10px 0 0; overflow: hidden; }
+        .tab-button { flex: 1; padding: 15px 20px; background: #e9ecef; border: none; cursor: pointer; font-size: 16px; font-weight: 600; color: #6c757d; transition: all 0.3s; }
+        .tab-button.active { background: #667eea; color: white; }
+        .tab-button:hover { background: #495057; color: white; }
+        .tab-content { display: none; background: white; padding: 25px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .tab-content.active { display: block; }
+        
+        .chart-section { background: white; padding: 25px; border-radius: 10px; margin: 20px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .chart-controls { margin-bottom: 20px; text-align: center; }
+        .checkbox-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 15px 0; }
+        .checkbox-item { display: flex; align-items: center; gap: 8px; }
+        .checkbox-item input[type="checkbox"] { transform: scale(1.2); }
+        
+        /* 支出分析样式 */
+        .expense-controls { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .control-group { margin-bottom: 15px; }
+        .control-group label { font-weight: 600; color: #495057; margin-bottom: 8px; display: block; }
+        .control-group select { padding: 8px 12px; border: 1px solid #ced4da; border-radius: 5px; font-size: 14px; }
+        .expense-checkboxes { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; }
+        .expense-checkboxes label { display: flex; align-items: center; gap: 8px; font-weight: normal; margin-bottom: 5px; }
+        .expense-checkboxes input[type="checkbox"] { transform: scale(1.1); }
+        .control-buttons { margin-top: 15px; }
+        .control-buttons button { padding: 8px 16px; margin: 0 5px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+        .control-buttons button:first-child { background: #28a745; color: white; }
+        .control-buttons button:nth-child(2) { background: #dc3545; color: white; }
+        .control-buttons button:last-child { background: #007bff; color: white; }
+        .control-buttons button:hover { opacity: 0.8; transform: translateY(-1px); }
+        .insights-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .insight-card { background: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 4px solid #667eea; }
+        .insight-card h4 { color: #667eea; margin-bottom: 15px; }
+        .insight-card ul { list-style: none; padding: 0; }
+        .insight-card li { margin-bottom: 8px; padding-left: 20px; position: relative; }
+        .insight-card li:before { content: "▶"; position: absolute; left: 0; color: #667eea; }
+        .checkbox-item label { cursor: pointer; font-size: 14px; }
+        .control-buttons { margin: 15px 0; text-align: center; }
+        .btn { padding: 8px 16px; margin: 0 5px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn:hover { opacity: 0.8; }
+        
+        .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+        .chart-item { background: #f8f9fa; padding: 20px; border-radius: 10px; }
+        .chart-item h3 { color: #667eea; margin-bottom: 15px; text-align: center; }
+        .chart-container { position: relative; height: 300px; }
+        
+        .data-table { width: 100%; border-collapse: collapse; margin: 20px 0; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-size: 0.75rem; }
+        .data-table th, .data-table td { padding: 4px 2px; text-align: center; border-bottom: 1px solid #e9ecef; border-right: 1px solid #e9ecef; }
+        .data-table th { background: #667eea; color: white; font-weight: 600; position: sticky; top: 0; }
+        .data-table .row-header { background: #f8f9fa; font-weight: bold; text-align: left; padding-left: 4px; position: sticky; left: 0; z-index: 1; min-width: 100px; font-size: 0.7rem; }
+        .data-table .total-row { background: #ffe6e6; font-weight: bold; color: #d63384; }
+        .data-table .total-col { background: #fff3cd; font-weight: bold; color: #856404; }
+        
+        /* 支出表格专用样式 - 红橙黄色系 */
+        .expense-table { }
+        .expense-table th { background: #dc3545; color: white; font-weight: 600; position: sticky; top: 0; }
+        .expense-table .row-header { background: #fff5f5; font-weight: bold; text-align: left; padding-left: 4px; position: sticky; left: 0; z-index: 1; min-width: 100px; font-size: 0.7rem; color: #721c24; }
+        .expense-table .total-row { background: #ffebee; font-weight: bold; color: #c62828; }
+        .expense-table .total-col { background: #fff3e0; font-weight: bold; color: #e65100; }
+        .expense-table tr:hover { background: #ffeaa7; }
+        .expense-table td { color: #d63384; }
+        
+        /* ASIN销量表格专用样式 - 浅绿色总计 */
+        .asin-table .total-row { background: #e8f5e8; font-weight: bold; color: #2e7d32; }
+        .asin-table .total-col { background: #e8f5e8; font-weight: bold; color: #2e7d32; }
+        
+        /* 财务汇总表格专用样式 - 蓝色系 */
+        .financial-summary-table { }
+        .financial-summary-table th { background: #007bff; color: white; font-weight: 600; position: sticky; top: 0; }
+        .financial-summary-table .row-header { background: #f0f8ff; font-weight: bold; text-align: left; padding-left: 4px; position: sticky; left: 0; z-index: 1; min-width: 100px; font-size: 0.7rem; color: #0056b3; }
+        .financial-summary-table .total-row { background: #e3f2fd; font-weight: bold; color: #1565c0; }
+        .financial-summary-table .total-col { background: #e3f2fd; font-weight: bold; color: #1565c0; }
+        .financial-summary-table tr:hover { background: #f0f8ff; }
+        .financial-summary-table .positive-profit { color: #28a745; font-weight: bold; }
+        .financial-summary-table .negative-profit { color: #dc3545; font-weight: bold; }
+        .financial-summary-table .income-cell { color: #28a745; }
+        .financial-summary-table .expense-cell { color: #dc3545; }
+        .data-table tr:hover { background: #f0f8ff; }
+        .table-container { overflow: auto; margin: 20px 0; max-height: 600px; border: 1px solid #ddd; border-radius: 10px; }
+        .highlight-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin: 20px 0; }
+        .avg-price { color: #666; font-size: 0.6rem; }
+        
+        @media (max-width: 768px) { 
+            .chart-grid { grid-template-columns: 1fr; }
+            .data-table { font-size: 0.65rem; } 
+            .data-table th, .data-table td { padding: 2px 1px; } 
+            .checkbox-container { grid-template-columns: 1fr; }
+            .expense-checkboxes { grid-template-columns: 1fr; }
+            .insights-grid { grid-template-columns: 1fr; }
+            .tab-buttons { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 终极版卖家分析报告</h1>
+            <p>Fenghai - Amazon销售数据完整分析 (2024年6月 - 2025年6月)</p>
+        </div>
+
+        <div class="section">
+            <h2>📈 财务概览</h2>
+            <div class="stats-grid">
+                <div class="stat-card revenue-card">
+                    <div class="stat-number">$165,569</div>
+                    <div class="stat-label">总收入</div>
+                </div>
+                <div class="stat-card expense-card">
+                    <div class="stat-number">-$90,795</div>
+                    <div class="stat-label">净费用</div>
+                </div>
+                <div class="stat-card transfer-card">
+                    <div class="stat-number">$71,731</div>
+                    <div class="stat-label">转账收入</div>
+                </div>
+                <div class="stat-card profit-card">
+                    <div class="stat-number">$74,774</div>
+                    <div class="stat-label">净利润</div>
+                </div>
+                <div class="stat-card info-card">
+                    <div class="stat-number">45.2%</div>
+                    <div class="stat-label">利润率</div>
+                </div>
+                <div class="stat-card info-card">
+                    <div class="stat-number">8,646</div>
+                    <div class="stat-label">订单总数</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-container">
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="switchTab('overview')">📊 总览分析</button>
+                <button class="tab-button" onclick="switchTab('comparison')">🔍 ASIN对比</button>
+                <button class="tab-button" onclick="switchTab('expenses')">💰 其他费用</button>
+            </div>
+            
+            <div id="overview" class="tab-content active">
+                <div class="section">
+                    <h2>📈 月度财务趋势</h2>
+                    <div class="chart-grid">
+                        <div class="chart-item">
+                            <h3>月度收入与支出</h3>
+                            <div class="chart-container">
+                                <canvas id="monthlyFinanceChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-item">
+                            <h3>净利润与利润率</h3>
+                            <div class="chart-container">
+                                <canvas id="profitChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 月度财务汇总表格 -->
+                    <div class="highlight-box" style="margin-top: 30px;">
+                        <h3>📊 月度财务汇总表</h3>
+                        <p>详细展示每个月的收入、支出、净利润和利润率</p>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="data-table financial-summary-table" id="financialSummaryTable">
+                            <!-- 表格内容将通过JavaScript生成 -->
+                        </table>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>🛍️ ASIN销量详细统计</h2>
+                    <div class="highlight-box">
+                        <h3>📋 所有ASIN月度销量统计（千位分隔格式）</h3>
+                        <p>每个单元格显示：数量 / $金额 / $平均价格</p>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="data-table" id="asinTable">
+                            <!-- 表格内容将通过JavaScript生成 -->
+                        </table>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💰 支出类型详细分析</h2>
+                    <div class="highlight-box">
+                        <h3>📋 各类型支出月度分解（千位分隔格式）</h3>
+                        <p>横轴为月份，纵轴为支出类型，每个单元格显示该月该类型的支出金额</p>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="data-table" id="expenseTable">
+                            <!-- 表格内容将通过JavaScript生成 -->
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="comparison" class="tab-content">
+                <div class="section">
+                    <h2>📊 多选ASIN对比分析</h2>
+                    <div class="highlight-box">
+                        <h3>🎯 多产品对比分析工具</h3>
+                        <p>可以同时选择多个ASIN进行对比分析，在同一个图表中查看不同产品的表现差异。</p>
+                    </div>
+                    
+                    <div class="chart-section">
+                        <div class="chart-controls">
+                            <h4 style="margin-bottom: 15px;">选择要对比的ASIN:</h4>
+                            <div class="checkbox-container">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="asin_B0CC2TZFCL" value="B0CC2TZFCL" checked>
+                                    <label for="asin_B0CC2TZFCL">B0CC2TZFCL</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="asin_B0D6X54QJF" value="B0D6X54QJF" checked>
+                                    <label for="asin_B0D6X54QJF">B0D6X54QJF</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="asin_B0D6ZWNB9B" value="B0D6ZWNB9B" checked>
+                                    <label for="asin_B0D6ZWNB9B">B0D6ZWNB9B</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="asin_B0D77YR4W4" value="B0D77YR4W4">
+                                    <label for="asin_B0D77YR4W4">B0D77YR4W4</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="asin_B0D9DLFP7S" value="B0D9DLFP7S">
+                                    <label for="asin_B0D9DLFP7S">B0D9DLFP7S</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="asin_B0D9FRNZQB" value="B0D9FRNZQB">
+                                    <label for="asin_B0D9FRNZQB">B0D9FRNZQB</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="asin_B0DC15BLGH" value="B0DC15BLGH">
+                                    <label for="asin_B0DC15BLGH">B0DC15BLGH</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="asin_B0DC15DT9B" value="B0DC15DT9B">
+                                    <label for="asin_B0DC15DT9B">B0DC15DT9B</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="asin_B0DC6WX9WH" value="B0DC6WX9WH">
+                                    <label for="asin_B0DC6WX9WH">B0DC6WX9WH</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="asin_B0F3VTWL5W" value="B0F3VTWL5W">
+                                    <label for="asin_B0F3VTWL5W">B0F3VTWL5W</label>
+                                </div>
+                            </div>
+                            <div class="control-buttons">
+                                <button class="btn btn-primary" onclick="selectAll()">全选</button>
+                                <button class="btn btn-secondary" onclick="clearAll()">清空</button>
+                                <button class="btn btn-primary" onclick="selectTop3()">选择前3名</button>
+                                <button class="btn btn-primary" onclick="updateComparisonCharts()">更新图表</button>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-grid">
+                            <div class="chart-item">
+                                <h3>多ASIN销量对比</h3>
+                                <div class="chart-container">
+                                    <canvas id="quantityChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="chart-item">
+                                <h3>多ASIN销售金额对比</h3>
+                                <div class="chart-container">
+                                    <canvas id="revenueChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-grid">
+                            <div class="chart-item">
+                                <h3>多ASIN平均价格对比</h3>
+                                <div class="chart-container">
+                                    <canvas id="priceChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="chart-item">
+                                <h3>选中ASIN总销量分布</h3>
+                                <div class="chart-container">
+                                    <canvas id="distributionChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 支出分析标签页 -->
+        <div id="expenses" class="tab-content">
+            <div class="section">
+                <h2>💰 其他费用详情</h2>
+                
+                <!-- 支出概览卡片 -->
+                <div class="overview-grid">
+                    <div class="overview-card">
+                        <div class="card-icon">💸</div>
+                        <div class="card-content">
+                            <h3>净费用总计</h3>
+                            <div class="card-value">-$90,795</div>
+                            <div class="card-subtitle">13个月累计</div>
+                        </div>
+                    </div>
+                    <div class="overview-card">
+                        <div class="card-icon">📊</div>
+                        <div class="card-content">
+                            <h3>平均月净费用</h3>
+                            <div class="card-value">-$6,984</div>
+                            <div class="card-subtitle">月度平均值</div>
+                        </div>
+                    </div>
+                    <div class="overview-card">
+                        <div class="card-icon">📈</div>
+                        <div class="card-content">
+                            <h3>最高月净费用</h3>
+                            <div class="card-value">-$27,940</div>
+                            <div class="card-subtitle">2024年12月</div>
+                        </div>
+                    </div>
+                    <div class="overview-card">
+                        <div class="card-icon">📉</div>
+                        <div class="card-content">
+                            <h3>最低月净费用</h3>
+                            <div class="card-value">-$266</div>
+                            <div class="card-subtitle">2024年6月</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 支出类型选择器 -->
+                <div class="chart-section">
+                    <h3>🎯 支出类型分析</h3>
+                    <div class="expense-controls">
+                        <div class="control-group">
+                            <label>选择分析维度：</label>
+                            <select id="expenseViewType" onchange="updateExpenseView()">
+                                <option value="total">总体占比分析</option>
+                                <option value="monthly">月度趋势分析</option>
+                                <option value="comparison">类型对比分析</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label>支出类型筛选：</label>
+                            <div class="expense-checkboxes">
+                                <label><input type="checkbox" value="Service Fee" checked onchange="updateExpenseCharts()"> Service Fee (服务费)</label>
+                                <label><input type="checkbox" value="Refund" checked onchange="updateExpenseCharts()"> Refund (退款)</label>
+                                <label><input type="checkbox" value="FBA Inventory Fee" checked onchange="updateExpenseCharts()"> FBA Inventory Fee (库存费)</label>
+                                <label><input type="checkbox" value="Adjustment" checked onchange="updateExpenseCharts()"> Adjustment (调整)</label>
+                                <label><input type="checkbox" value="FBA Transaction fees" checked onchange="updateExpenseCharts()"> FBA Transaction fees (交易费)</label>
+                                <label><input type="checkbox" value="Liquidations" checked onchange="updateExpenseCharts()"> Liquidations (清算)</label>
+                            </div>
+                        </div>
+                        <div class="control-buttons">
+                            <button onclick="selectAllExpenses()">全选</button>
+                            <button onclick="clearAllExpenses()">清空</button>
+                            <button onclick="selectTopExpenses()">选择主要支出</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 图表区域 -->
+                <div class="chart-grid">
+                    <div class="chart-item">
+                        <h3 id="expenseChartTitle">支出类型总体占比</h3>
+                        <div class="chart-container">
+                            <canvas id="expenseMainChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-item">
+                        <h3>支出类型月度趋势</h3>
+                        <div class="chart-container">
+                            <canvas id="expenseTrendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 详细支出统计表 -->
+                <div class="chart-section">
+                    <h3>📋 详细支出统计表</h3>
+                    <div class="table-container">
+                        <table id="detailedExpenseTable" class="data-table">
+                            <!-- 表格内容将通过JavaScript生成 -->
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 支出洞察分析 -->
+                <div class="chart-section">
+                    <h3>🔍 支出洞察分析</h3>
+                    <div class="insights-grid">
+                        <div class="insight-card">
+                            <h4>💡 主要费用类型</h4>
+                            <ul>
+                                <li><strong>Service Fee</strong>: -$73,126 (80.5%) - 平台服务费是最大支出项</li>
+                                <li><strong>Refund</strong>: -$8,855 (9.8%) - 退款损失需要关注</li>
+                                <li><strong>FBA Inventory Fee</strong>: -$8,166 (9.0%) - 库存管理费用</li>
+                                <li><strong>BLANK</strong>: -$1,750 (1.9%) - 其他未分类费用</li>
+                                <li><strong>Adjustment</strong>: +$987 (收入调整) - 正向调整</li>
+                            </ul>
+                        </div>
+                        <div class="insight-card">
+                            <h4>📈 费用趋势分析</h4>
+                            <ul>
+                                <li><strong>2024年12月</strong>: 净费用峰值月份(-$27,940)，主要由于大量平台费用</li>
+                                <li><strong>2025年1-6月</strong>: 净费用逐步下降，运营效率提升</li>
+                                <li><strong>平均月净费用</strong>: -$6,984，成本控制良好</li>
+                                <li><strong>BLANK费用</strong>: 主要集中在2025年4-6月</li>
+                            </ul>
+                        </div>
+                        <div class="insight-card">
+                            <h4>⚠️ 成本优化建议</h4>
+                            <ul>
+                                <li><strong>平台费用</strong>: 优化销售策略，提高单价降低费率影响</li>
+                                <li><strong>退款率控制</strong>: 提升产品质量，降低退款率</li>
+                                <li><strong>库存管理</strong>: 优化FBA库存，减少库存费用</li>
+                                <li><strong>未分类费用</strong>: 识别BLANK费用来源，加强费用管理</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; padding: 25px; background: #f8f9fa; border-radius: 15px;">
+            <h3 style="color: #667eea; margin-bottom: 15px;">📋 终极版报告总结</h3>
+            <p style="color: #6c757d; font-size: 1.1rem; line-height: 1.6;">
+                该终极版报告包含完整的财务分析、ASIN销量统计和详细支出分解。
+                支持标签页切换，提供总览分析、ASIN对比和其他费用三个视图。
+                所有数字采用千位分隔格式，界面清晰美观，支持交互式数据探索。
+            </p>
+            <p style="color: #495057; font-weight: 600; margin-top: 15px;">
+                功能完整，数据准确，界面优化，体验极佳！🚀
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // 数据定义
+        const months = ['2024-06', '2024-07', '2024-08', '2024-09', '2024-10', '2024-11', '2024-12', '2025-01', '2025-02', '2025-03', '2025-04', '2025-05', '2025-06'];
+        
+        const monthlyFinanceData = {
+            income: [374, 3248, 2327, 3014, 4648, 19706, 71802, 10854, 12122, 9917, 10664, 8808, 8085],
+            expenses: [-265.97, -624.9, -718.73, -707.42, -5298.61, -12352.9, -27940.33, -9421.7, -8523.82, -6552.76, -7044.34, -6378.56, -4964.48],
+            transfers: [0, 1719, 1466, 2329, 0, 0, 66217, 0, 0, 0, 0, 0, 0],
+            profit: [108.03, 2623.1, 1608.27, 2306.58, -650.61, 7353.1, 43861.67, 1432.3, 3598.18, 3364.24, 3619.66, 2429.44, 3120.52],
+            profitRate: [28.9, 80.8, 69.1, 76.5, -14.0, 37.3, 61.1, 13.2, 29.7, 33.9, 33.9, 27.6, 38.6]
+        };
+        
+        const asinData = {
+            'B0CC2TZFCL': {
+                quantities: [38, 249, 102, 100, 85, 214, 209, 11, 19, 22, 43, 54, 32],
+                revenues: [374, 3248, 1678, 1483, 1189, 2930, 3403, 283, 513, 392, 828, 797, 480],
+                prices: [9.84, 13.05, 16.45, 14.83, 13.99, 13.69, 16.28, 25.73, 27.00, 17.82, 19.26, 14.76, 15.00]
+            },
+            'B0D6X54QJF': {
+                quantities: [0, 0, 0, 14, 49, 373, 1075, 154, 177, 118, 92, 79, 120],
+                revenues: [0, 0, 0, 27, 1015, 7332, 24669, 3588, 4101, 2960, 2411, 1504, 1849],
+                prices: [0, 0, 0, 1.93, 20.71, 19.65, 22.95, 23.30, 23.17, 25.08, 26.21, 19.04, 15.41]
+            },
+            'B0D6ZWNB9B': {
+                quantities: [0, 0, 37, 52, 95, 208, 725, 69, 80, 98, 132, 113, 159],
+                revenues: [0, 0, 618, 1177, 1923, 3975, 14963, 1738, 2453, 2640, 3323, 2901, 3779],
+                prices: [0, 0, 16.70, 22.63, 20.24, 19.11, 20.64, 25.19, 30.66, 26.94, 25.17, 25.67, 23.77]
+            },
+            'B0D77YR4W4': {
+                quantities: [0, 0, 1, 38, 15, 41, 315, 9, 87, 11, 3, 4, 4],
+                revenues: [0, 0, 31, 311, 249, 557, 5659, 199, 839, 136, 95, 110, 101],
+                prices: [0, 0, 31.00, 8.18, 16.60, 13.59, 17.97, 22.11, 9.64, 12.36, 31.67, 27.50, 25.25]
+            },
+            'B0D9DLFP7S': {
+                quantities: [0, 0, 0, 3, 8, 33, 99, 96, 43, 54, 95, 3, 3],
+                revenues: [0, 0, 0, 45, 121, 927, 2327, 1646, 1277, 782, 1429, 57, 110],
+                prices: [0, 0, 0, 15.00, 15.13, 28.09, 23.51, 17.15, 29.70, 14.48, 15.04, 19.00, 36.67]
+            },
+            'B0D9FRNZQB': {
+                quantities: [0, 0, 0, 3, 3, 20, 203, 123, 17, 32, 5, 4, 5],
+                revenues: [0, 0, 0, -29, 61, 512, 4386, 1901, 580, 544, 158, 117, 174],
+                prices: [0, 0, 0, -9.67, 20.33, 25.60, 21.61, 15.46, 34.12, 17.00, 31.60, 29.25, 34.80]
+            },
+            'B0DC15BLGH': {
+                quantities: [0, 0, 0, 0, 1, 47, 164, 4, 7, 12, 15, 32, 10],
+                revenues: [0, 0, 0, 0, 25, 906, 3349, 135, 217, 348, 408, 828, 273],
+                prices: [0, 0, 0, 0, 25.00, 19.28, 20.42, 33.75, 31.00, 29.00, 27.20, 25.88, 27.30]
+            },
+            'B0DC15DT9B': {
+                quantities: [0, 0, 0, 0, 7, 53, 152, 3, 8, 42, 46, 52, 32],
+                revenues: [0, 0, 0, 0, 58, 962, 3006, 101, 259, 1149, 1124, 1288, 788],
+                prices: [0, 0, 0, 0, 8.29, 18.15, 19.78, 33.67, 32.38, 27.36, 24.43, 24.77, 24.63]
+            },
+            'B0DC6WX9WH': {
+                quantities: [0, 0, 0, 0, 8, 112, 667, 58, 148, 54, 59, 226, 41],
+                revenues: [0, 0, 0, 0, 7, 1605, 10040, 1263, 1883, 968, 888, 1206, 598],
+                prices: [0, 0, 0, 0, 0.88, 14.33, 15.05, 21.78, 12.72, 17.93, 15.05, 5.34, 14.59]
+            },
+            'B0F3VTWL5W': {
+                quantities: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9],
+                revenues: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -67],
+                prices: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -7.44]
+            }
+        };
+
+        const expenseData = {
+            'Adjustment': [0, 14.87, 15.6, 22.01, 0.0, 102.62, 82.12, 176.61, 637.04, 266.3, -250.73, -41.06, -38.01],
+            'FBA Inventory Fee': [0, -18.32, -71.22, -220.71, -352.83, -1771.52, -2809.48, -1441.54, -304.66, -358.56, -323.9, -287.62, -205.67],
+            'FBA Transaction fees': [0, 0, 0, 0.0, 0.0, -9.46, 0, 0, -9.36, 0.0, -5.05, 0, -9.41],
+            'Liquidations': [0, 0, 0, 0, 0, 3.05, 1.3, 5.82, 4.55, 16.05, 23.98, 62.18, 31.46],
+            'Liquidations Adjustments': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            'Order_Retrocharge': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            'Refund': [-21.7, -478.95, -281.71, -215.13, -188.11, -241.18, -2971.3, -2149.46, -565.65, -516.14, -478.64, -437.06, -309.63],
+            'Service Fee': [-244.27, -142.5, -231.4, -143.59, -4707.67, -10436.41, -22242.97, -6013.13, -8285.74, -5960.41, -5810.0, -5075.0, -3833.22],
+            'BLANK': [0, 0, -150.0, -150.0, -50.0, 0, 0, 0, 0, 0, -200.0, -600.0, -600.0]
+        };
+
+        // Transfer数据单独处理（这是收入，不是支出）
+        const transferData = [0, 1719, 1466, 2329, 0, 0, 66217, 0, 0, 0, 0, 0, 0];
+
+        // 颜色配置
+        const colors = [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+            '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#8B5CF6'
+        ];
+
+        // 图表实例
+        let monthlyFinanceChart, profitChart, quantityChart, revenueChart, priceChart, distributionChart;
+        let expenseMainChart, expenseTrendChart;
+
+        // 格式化数字为千位分隔格式，保持原始正负数，保留1位小数
+        function formatNumber(num) {
+            if (num === 0) return '0.0';
+            if (num === null || num === undefined) return '-';
+            
+            // 确保是数字类型
+            const numValue = typeof num === 'string' ? parseFloat(num) : num;
+            if (isNaN(numValue)) return '-';
+            
+            // 保留1位小数，保持原始正负号
+            return numValue.toLocaleString(undefined, {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1
+            });
+        }
+
+        // 标签页切换
+        function switchTab(tabName) {
+            // 隐藏所有标签内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 移除所有按钮的active类
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // 显示选中的标签内容
+            document.getElementById(tabName).classList.add('active');
+            
+            // 激活对应的按钮
+            event.target.classList.add('active');
+            
+            // 如果切换到对比标签，初始化对比图表
+            if (tabName === 'comparison') {
+                setTimeout(() => {
+                    initComparisonCharts();
+                }, 100);
+            }
+            
+            // 如果切换到支出分析标签，初始化支出图表
+            if (tabName === 'expenses') {
+                setTimeout(() => {
+                    initExpenseCharts();
+                    generateDetailedExpenseTable();
+                }, 100);
+            }
+        }
+
+        // 生成ASIN表格
+        function generateAsinTable() {
+            const table = document.getElementById('asinTable');
+            table.className = 'data-table asin-table'; // 添加ASIN专用样式类
+            let html = '<thead><tr><th class="row-header">ASIN</th>';
+            
+            // 添加月份列标题
+            months.forEach(month => {
+                html += `<th>${month}</th>`;
+            });
+            html += '<th class="total-col">总计</th></tr></thead><tbody>';
+            
+            // 添加每个ASIN的数据行
+            Object.keys(asinData).forEach(asin => {
+                html += `<tr><td class="row-header">${asin}</td>`;
+                
+                months.forEach((month, index) => {
+                    const qty = asinData[asin].quantities[index];
+                    const revenue = asinData[asin].revenues[index];
+                    const price = asinData[asin].prices[index];
+                    
+                    if (qty === 0) {
+                        html += '<td>0 / $0.0<br><span class="avg-price">-</span></td>';
+                    } else {
+                        html += `<td>${formatNumber(qty)} / $${formatNumber(revenue)}<br><span class="avg-price">$${price.toFixed(1)}</span></td>`;
+                    }
+                });
+                
+                // 总计列
+                const totalQty = asinData[asin].quantities.reduce((sum, qty) => sum + qty, 0);
+                const totalRevenue = asinData[asin].revenues.reduce((sum, rev) => sum + rev, 0);
+                const avgPrice = totalQty > 0 ? totalRevenue / totalQty : 0;
+                
+                html += `<td class="total-col"><strong>${formatNumber(totalQty)} / $${formatNumber(totalRevenue)}<br><span class="avg-price">$${avgPrice.toFixed(1)}</span></strong></td></tr>`;
+            });
+            
+            // 添加总计行
+            html += '<tr class="total-row"><td class="row-header"><strong>月度总计</strong></td>';
+            months.forEach((month, index) => {
+                const totalQty = Object.values(asinData).reduce((sum, asin) => sum + asin.quantities[index], 0);
+                const totalRevenue = Object.values(asinData).reduce((sum, asin) => sum + asin.revenues[index], 0);
+                const avgPrice = totalQty > 0 ? totalRevenue / totalQty : 0;
+                
+                html += `<td><strong>${formatNumber(totalQty)} / $${formatNumber(totalRevenue)}<br><span class="avg-price">$${avgPrice.toFixed(1)}</span></strong></td>`;
+            });
+            
+            // 总的总计
+            const grandTotalQty = Object.values(asinData).reduce((sum, asin) => 
+                sum + asin.quantities.reduce((s, q) => s + q, 0), 0);
+            const grandTotalRevenue = Object.values(asinData).reduce((sum, asin) => 
+                sum + asin.revenues.reduce((s, r) => s + r, 0), 0);
+            const grandAvgPrice = grandTotalQty > 0 ? grandTotalRevenue / grandTotalQty : 0;
+            
+            html += `<td class="total-col"><strong>${formatNumber(grandTotalQty)} / $${formatNumber(grandTotalRevenue)}<br><span class="avg-price">$${grandAvgPrice.toFixed(1)}</span></strong></td></tr>`;
+            html += '</tbody>';
+            
+            table.innerHTML = html;
+        }
+
+        // 生成支出表格
+        function generateExpenseTable() {
+            const table = document.getElementById('expenseTable');
+            table.className = 'data-table expense-table'; // 添加支出专用样式类
+            let html = '<thead><tr><th class="row-header">其他费用</th>';
+            
+            // 添加月份列标题
+            months.forEach(month => {
+                html += `<th>${month}</th>`;
+            });
+            html += '<th class="total-col">总计</th></tr></thead><tbody>';
+            
+            // 计算总的总计，用于验证
+            let grandTotalCheck = 0;
+            
+            // 添加每个支出类型的数据行
+            Object.keys(expenseData).forEach(expenseType => {
+                // 跳过总计为0的支出类型
+                const typeTotal = expenseData[expenseType].reduce((sum, amount) => sum + amount, 0);
+                if (typeTotal === 0) return;
+                
+                html += `<tr><td class="row-header">${expenseType}</td>`;
+                
+                months.forEach((month, index) => {
+                    const amount = expenseData[expenseType][index];
+                    if (amount === 0) {
+                        html += `<td>$0.0</td>`;
+                    } else {
+                        // 保持原始正负数，不强制添加负号
+                        html += `<td>$${formatNumber(amount)}</td>`;
+                    }
+                });
+                
+                // 总计列
+                grandTotalCheck += typeTotal;
+                html += `<td class="total-col"><strong>$${formatNumber(typeTotal)}</strong></td></tr>`;
+            });
+            
+            // 添加总计行
+            html += '<tr class="total-row"><td class="row-header"><strong>月度总计</strong></td>';
+            let monthlyTotalCheck = 0;
+            months.forEach((month, index) => {
+                const monthTotal = Object.values(expenseData).reduce((sum, expenseType) => sum + expenseType[index], 0);
+                monthlyTotalCheck += monthTotal;
+                if (monthTotal === 0) {
+                    html += `<td><strong>$0.0</strong></td>`;
+                } else {
+                    html += `<td><strong>$${formatNumber(monthTotal)}</strong></td>`;
+                }
+            });
+            
+            // 总的总计 - 使用验证过的数值
+            html += `<td class="total-col"><strong>$${formatNumber(grandTotalCheck)}</strong></td></tr>`;
+            html += '</tbody>';
+            
+            table.innerHTML = html;
+            
+            // 控制台验证
+            console.log(`支出表格验证: 按类型=${grandTotalCheck.toFixed(2)}, 按月份=${monthlyTotalCheck.toFixed(2)}`);
+        }
+
+        // 生成财务汇总表格
+        function generateFinancialSummaryTable() {
+            const table = document.getElementById('financialSummaryTable');
+            table.className = 'data-table financial-summary-table';
+            let html = '<thead><tr><th class="row-header">月份</th>';
+            html += '<th>收入总计</th>';
+            html += '<th>支出总计</th>';
+            html += '<th>净利润</th>';
+            html += '<th>利润率</th>';
+            html += '</tr></thead><tbody>';
+            
+            // 添加每个月的数据行
+            months.forEach((month, index) => {
+                const income = monthlyFinanceData.income[index];
+                const expense = monthlyFinanceData.expenses[index];
+                const profit = monthlyFinanceData.profit[index];
+                const profitRate = monthlyFinanceData.profitRate[index];
+                
+                html += `<tr><td class="row-header">${month}</td>`;
+                html += `<td class="income-cell">$${formatNumber(income)}</td>`;
+                html += `<td class="expense-cell">$${formatNumber(expense)}</td>`;
+                
+                // 净利润根据正负显示不同颜色
+                const profitClass = profit >= 0 ? 'positive-profit' : 'negative-profit';
+                html += `<td class="${profitClass}">$${formatNumber(profit)}</td>`;
+                
+                // 利润率根据正负显示不同颜色
+                const rateClass = profitRate >= 0 ? 'positive-profit' : 'negative-profit';
+                html += `<td class="${rateClass}">${profitRate}%</td></tr>`;
+            });
+            
+            // 添加总计行
+            const totalIncome = monthlyFinanceData.income.reduce((sum, val) => sum + val, 0);
+            const totalExpense = monthlyFinanceData.expenses.reduce((sum, val) => sum + val, 0);
+            const totalProfit = monthlyFinanceData.profit.reduce((sum, val) => sum + val, 0);
+            const avgProfitRate = (totalProfit / totalIncome * 100).toFixed(1);
+            
+            html += '<tr class="total-row">';
+            html += '<td class="row-header"><strong>总计</strong></td>';
+            html += `<td class="income-cell"><strong>$${formatNumber(totalIncome)}</strong></td>`;
+            html += `<td class="expense-cell"><strong>$${formatNumber(totalExpense)}</strong></td>`;
+            
+            const totalProfitClass = totalProfit >= 0 ? 'positive-profit' : 'negative-profit';
+            html += `<td class="${totalProfitClass}"><strong>$${formatNumber(totalProfit)}</strong></td>`;
+            
+            const totalRateClass = avgProfitRate >= 0 ? 'positive-profit' : 'negative-profit';
+            html += `<td class="${totalRateClass}"><strong>${avgProfitRate}%</strong></td></tr>`;
+            
+            html += '</tbody>';
+            table.innerHTML = html;
+            
+            // 控制台验证
+            console.log(`财务汇总表格: 总收入=${totalIncome}, 总支出=${totalExpense.toFixed(2)}, 净利润=${totalProfit.toFixed(2)}`);
+        }
+
+        // 初始化总览图表
+        function initOverviewCharts() {
+            // 月度财务图表
+            const financeCtx = document.getElementById('monthlyFinanceChart').getContext('2d');
+            monthlyFinanceChart = new Chart(financeCtx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: '收入',
+                        data: monthlyFinanceData.income,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: '支出',
+                        data: monthlyFinanceData.expenses,
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // 利润图表
+            const profitCtx = document.getElementById('profitChart').getContext('2d');
+            profitChart = new Chart(profitCtx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: '净利润',
+                        data: monthlyFinanceData.profit,
+                        backgroundColor: monthlyFinanceData.profit.map(p => p >= 0 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(239, 68, 68, 0.7)'),
+                        borderColor: monthlyFinanceData.profit.map(p => p >= 0 ? '#10b981' : '#ef4444'),
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    }, {
+                        label: '利润率 (%)',
+                        data: monthlyFinanceData.profitRate,
+                        type: 'line',
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // 对比图表相关函数
+        function getSelectedAsins() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        function selectAll() {
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+            updateComparisonCharts();
+        }
+
+        function clearAll() {
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            updateComparisonCharts();
+        }
+
+        function selectTop3() {
+            clearAll();
+            ['B0D6X54QJF', 'B0D6ZWNB9B', 'B0DC6WX9WH'].forEach(asin => {
+                const checkbox = document.getElementById('asin_' + asin);
+                if (checkbox) checkbox.checked = true;
+            });
+            updateComparisonCharts();
+        }
+
+        function initComparisonCharts() {
+            if (quantityChart) return; // 已经初始化过了
+
+            const quantityCtx = document.getElementById('quantityChart').getContext('2d');
+            const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+            const priceCtx = document.getElementById('priceChart').getContext('2d');
+            const distributionCtx = document.getElementById('distributionChart').getContext('2d');
+
+            quantityChart = new Chart(quantityCtx, {
+                type: 'line',
+                data: { labels: months, datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            revenueChart = new Chart(revenueCtx, {
+                type: 'line',
+                data: { labels: months, datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: function(value) { return '$' + value.toLocaleString(); } }
+                        }
+                    },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            priceChart = new Chart(priceCtx, {
+                type: 'line',
+                data: { labels: months, datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: function(value) { return '$' + value.toFixed(2); } }
+                        }
+                    },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            distributionChart = new Chart(distributionCtx, {
+                type: 'doughnut',
+                data: { labels: [], datasets: [{ data: [], backgroundColor: colors }] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            updateComparisonCharts();
+        }
+
+        function updateComparisonCharts() {
+            if (!quantityChart) return;
+
+            const selectedAsins = getSelectedAsins();
+            
+            if (selectedAsins.length === 0) {
+                quantityChart.data.datasets = [];
+                revenueChart.data.datasets = [];
+                priceChart.data.datasets = [];
+                distributionChart.data.labels = [];
+                distributionChart.data.datasets[0].data = [];
+            } else {
+                updateLineCharts(selectedAsins);
+                updateDistributionChart(selectedAsins);
+            }
+
+            quantityChart.update();
+            revenueChart.update();
+            priceChart.update();
+            distributionChart.update();
+        }
+
+        function updateLineCharts(selectedAsins) {
+            const quantityDatasets = [];
+            const revenueDatasets = [];
+            const priceDatasets = [];
+
+            selectedAsins.forEach((asin, index) => {
+                const data = asinData[asin];
+                const color = colors[index % colors.length];
+
+                quantityDatasets.push({
+                    label: asin,
+                    data: data.quantities,
+                    borderColor: color,
+                    backgroundColor: color + '20',
+                    tension: 0.4,
+                    fill: false
+                });
+
+                revenueDatasets.push({
+                    label: asin,
+                    data: data.revenues,
+                    borderColor: color,
+                    backgroundColor: color + '20',
+                    tension: 0.4,
+                    fill: false
+                });
+
+                const priceData = data.prices.map(price => price === 0 ? null : price);
+                priceDatasets.push({
+                    label: asin,
+                    data: priceData,
+                    borderColor: color,
+                    backgroundColor: color + '20',
+                    tension: 0.4,
+                    fill: false,
+                    spanGaps: true
+                });
+            });
+
+            quantityChart.data.datasets = quantityDatasets;
+            revenueChart.data.datasets = revenueDatasets;
+            priceChart.data.datasets = priceDatasets;
+        }
+
+        function updateDistributionChart(selectedAsins) {
+            const labels = [];
+            const data = [];
+            const backgroundColors = [];
+
+            selectedAsins.forEach((asin, index) => {
+                const total = asinData[asin].quantities.reduce((sum, qty) => sum + qty, 0);
+                if (total > 0) {
+                    labels.push(asin);
+                    data.push(total);
+                    backgroundColors.push(colors[index % colors.length]);
+                }
+            });
+
+            distributionChart.data.labels = labels;
+            distributionChart.data.datasets[0].data = data;
+            distributionChart.data.datasets[0].backgroundColor = backgroundColors;
+        }
+
+        // 支出分析相关函数
+        function getSelectedExpenseTypes() {
+            const checkboxes = document.querySelectorAll('.expense-checkboxes input[type="checkbox"]:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        function selectAllExpenses() {
+            document.querySelectorAll('.expense-checkboxes input[type="checkbox"]').forEach(cb => cb.checked = true);
+            updateExpenseCharts();
+        }
+
+        function clearAllExpenses() {
+            document.querySelectorAll('.expense-checkboxes input[type="checkbox"]').forEach(cb => cb.checked = false);
+            updateExpenseCharts();
+        }
+
+        function selectTopExpenses() {
+            clearAllExpenses();
+            ['Service Fee', 'Refund', 'FBA Inventory Fee'].forEach(type => {
+                const checkbox = document.querySelector(`input[value="${type}"]`);
+                if (checkbox) checkbox.checked = true;
+            });
+            updateExpenseCharts();
+        }
+
+        function updateExpenseView() {
+            const viewType = document.getElementById('expenseViewType').value;
+            const titleElement = document.getElementById('expenseChartTitle');
+            
+            switch(viewType) {
+                case 'total':
+                    titleElement.textContent = '支出类型总体占比';
+                    break;
+                case 'monthly':
+                    titleElement.textContent = '支出类型月度分布';
+                    break;
+                case 'comparison':
+                    titleElement.textContent = '支出类型对比分析';
+                    break;
+            }
+            
+            updateExpenseCharts();
+        }
+
+        function initExpenseCharts() {
+            if (expenseMainChart) return; // 已经初始化过了
+
+            const mainCtx = document.getElementById('expenseMainChart').getContext('2d');
+            const trendCtx = document.getElementById('expenseTrendChart').getContext('2d');
+
+            // 主图表 - 根据视图类型动态切换
+            expenseMainChart = new Chart(mainCtx, {
+                type: 'doughnut',
+                data: { labels: [], datasets: [{ data: [], backgroundColor: colors }] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: $${context.parsed.toLocaleString()} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 趋势图表
+            expenseTrendChart = new Chart(trendCtx, {
+                type: 'line',
+                data: { labels: months, datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            stacked: false,
+                            ticks: { callback: function(value) { return '$' + value.toLocaleString(); } }
+                        }
+                    },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            updateExpenseCharts();
+        }
+
+        function updateExpenseCharts() {
+            if (!expenseMainChart) return;
+
+            const selectedTypes = getSelectedExpenseTypes();
+            const viewType = document.getElementById('expenseViewType').value;
+
+            if (selectedTypes.length === 0) {
+                expenseMainChart.data.labels = [];
+                expenseMainChart.data.datasets[0].data = [];
+                expenseTrendChart.data.datasets = [];
+            } else {
+                updateMainExpenseChart(selectedTypes, viewType);
+                updateExpenseTrendChart(selectedTypes);
+            }
+
+            expenseMainChart.update();
+            expenseTrendChart.update();
+        }
+
+        function updateMainExpenseChart(selectedTypes, viewType) {
+            const labels = [];
+            const data = [];
+            const backgroundColors = [];
+
+            if (viewType === 'total') {
+                // 总体占比视图
+                selectedTypes.forEach((type, index) => {
+                    const total = expenseData[type].reduce((sum, val) => sum + val, 0);
+                    if (total > 0) {
+                        labels.push(type);
+                        data.push(total);
+                        backgroundColors.push(colors[index % colors.length]);
+                    }
+                });
+                expenseMainChart.config.type = 'doughnut';
+            } else if (viewType === 'monthly') {
+                // 月度分布视图 - 显示每月总支出
+                months.forEach((month, index) => {
+                    const monthTotal = selectedTypes.reduce((sum, type) => sum + expenseData[type][index], 0);
+                    labels.push(month);
+                    data.push(monthTotal);
+                    backgroundColors.push(colors[index % colors.length]);
+                });
+                expenseMainChart.config.type = 'bar';
+            } else if (viewType === 'comparison') {
+                // 对比分析视图
+                selectedTypes.forEach((type, index) => {
+                    const total = expenseData[type].reduce((sum, val) => sum + val, 0);
+                    if (total > 0) {
+                        labels.push(type);
+                        data.push(total);
+                        backgroundColors.push(colors[index % colors.length]);
+                    }
+                });
+                expenseMainChart.config.type = 'bar';
+            }
+
+            expenseMainChart.data.labels = labels;
+            expenseMainChart.data.datasets[0].data = data;
+            expenseMainChart.data.datasets[0].backgroundColor = backgroundColors;
+        }
+
+        function updateExpenseTrendChart(selectedTypes) {
+            const datasets = [];
+
+            selectedTypes.forEach((type, index) => {
+                const color = colors[index % colors.length];
+                datasets.push({
+                    label: type,
+                    data: expenseData[type],
+                    borderColor: color,
+                    backgroundColor: color + '20',
+                    tension: 0.4,
+                    fill: false
+                });
+            });
+
+            expenseTrendChart.data.datasets = datasets;
+        }
+
+        function generateDetailedExpenseTable() {
+            const table = document.getElementById('detailedExpenseTable');
+            table.className = 'data-table expense-table'; // 添加支出专用样式类
+            let html = '<thead><tr><th class="row-header">其他费用</th>';
+            
+            // 添加月份列标题
+            months.forEach(month => {
+                html += `<th>${month}</th>`;
+            });
+            html += '<th class="total-col">总计</th><th class="total-col">占比</th></tr></thead><tbody>';
+            
+            // 计算总支出用于百分比计算
+            const grandTotal = Object.values(expenseData).reduce((sum, expenseType) => 
+                sum + expenseType.reduce((s, amount) => s + amount, 0), 0);
+            
+            let typeGrandTotal = 0; // 用于验证
+            
+            // 添加每个支出类型的数据行
+            Object.keys(expenseData).forEach(expenseType => {
+                const typeTotal = expenseData[expenseType].reduce((sum, amount) => sum + amount, 0);
+                
+                // 跳过总计为0的支出类型
+                if (typeTotal === 0) return;
+                
+                html += `<tr><td class="row-header">${expenseType}</td>`;
+                
+                months.forEach((month, index) => {
+                    const amount = expenseData[expenseType][index];
+                    if (amount === 0) {
+                        html += `<td>$0.0</td>`;
+                    } else {
+                        // 保持原始正负数，不强制添加负号
+                        html += `<td>$${formatNumber(amount)}</td>`;
+                    }
+                });
+                
+                // 总计列和占比列
+                const percentage = ((Math.abs(typeTotal) / Math.abs(grandTotal)) * 100).toFixed(1);
+                typeGrandTotal += typeTotal;
+                
+                html += `<td class="total-col"><strong>$${formatNumber(typeTotal)}</strong></td>`;
+                html += `<td class="total-col"><strong>${percentage}%</strong></td></tr>`;
+            });
+            
+            // 添加总计行
+            html += '<tr class="total-row"><td class="row-header"><strong>月度总计</strong></td>';
+            let monthlyGrandTotal = 0; // 用于验证
+            months.forEach((month, index) => {
+                const monthTotal = Object.values(expenseData).reduce((sum, expenseType) => sum + expenseType[index], 0);
+                monthlyGrandTotal += monthTotal;
+                if (monthTotal === 0) {
+                    html += `<td><strong>$0.0</strong></td>`;
+                } else {
+                    html += `<td><strong>$${formatNumber(monthTotal)}</strong></td>`;
+                }
+            });
+            
+            // 总的总计
+            html += `<td class="total-col"><strong>$${formatNumber(grandTotal)}</strong></td>`;
+            html += `<td class="total-col"><strong>100.0%</strong></td></tr>`;
+            html += '</tbody>';
+            
+            table.innerHTML = html;
+            
+            // 控制台验证
+            console.log(`详细支出表格验证: 总计=${grandTotal.toFixed(2)}, 按类型=${typeGrandTotal.toFixed(2)}, 按月份=${monthlyGrandTotal.toFixed(2)}`);
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            generateAsinTable();
+            generateExpenseTable();
+            generateFinancialSummaryTable();
+            initOverviewCharts();
+            
+            // 添加复选框事件监听
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    if (this.closest('.expense-checkboxes')) {
+                        updateExpenseCharts();
+                    } else {
+                        updateComparisonCharts();
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
